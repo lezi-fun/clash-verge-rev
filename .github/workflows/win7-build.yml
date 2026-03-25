@@ -1,0 +1,76 @@
+name: Win7 (Fixed WebView2) Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: 'Target arch'
+        required: true
+        type: choice
+        options:
+          - x64
+          - x86
+          - arm64
+        default: x64
+
+permissions: write-all
+
+env:
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: short
+  HUSKY: 0
+
+jobs:
+  build-windows-fixed-webview2:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.14.0'
+
+      - uses: pnpm/action-setup@v5
+        name: Install pnpm
+        with:
+          run_install: false
+
+      - name: Install deps
+        run: pnpm i
+
+      - name: Determine rust target
+        shell: pwsh
+        run: |
+          $arch = "${{ github.event.inputs.arch }}"
+          if ($arch -eq 'x64') { echo "TARGET=x86_64-pc-windows-msvc" >> $env:GITHUB_ENV }
+          elseif ($arch -eq 'x86') { echo "TARGET=i686-pc-windows-msvc" >> $env:GITHUB_ENV }
+          elseif ($arch -eq 'arm64') { echo "TARGET=aarch64-pc-windows-msvc" >> $env:GITHUB_ENV }
+          else { throw "Unknown arch: $arch" }
+
+      - name: Prebuild
+        run: pnpm run prebuild ${{ env.TARGET }}
+
+      - name: Prepare Fixed WebView2 Runtime
+        shell: pwsh
+        run: |
+          $arch = "${{ github.event.inputs.arch }}"
+          powershell -ExecutionPolicy Bypass -File .\scripts\windows\prepare-fixed-webview2.ps1 -Arch $arch
+
+      - name: Build (NSIS)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          NODE_OPTIONS: '--max_old_space_size=4096'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tauriScript: pnpm
+          args: --target ${{ env.TARGET }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: win7-fixed-webview2-${{ github.event.inputs.arch }}
+          archive: false
+          path: |
+            target/${{ env.TARGET }}/release/bundle/nsis/*setup*
