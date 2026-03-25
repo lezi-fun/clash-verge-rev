@@ -36,11 +36,22 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '24.14.0'
+          cache: 'pnpm'
 
       - uses: pnpm/action-setup@v5
         name: Install pnpm
         with:
           run_install: false
+
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@1.91.0
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: win7-${{ runner.os }}-${{ github.event.inputs.arch }}
+          workspaces: |
+            . -> target
 
       - name: Install deps
         run: pnpm i
@@ -53,6 +64,11 @@ jobs:
           elseif ($arch -eq 'x86') { echo "TARGET=i686-pc-windows-msvc" >> $env:GITHUB_ENV }
           elseif ($arch -eq 'arm64') { echo "TARGET=aarch64-pc-windows-msvc" >> $env:GITHUB_ENV }
           else { throw "Unknown arch: $arch" }
+
+      - name: Add Rust Target
+        shell: pwsh
+        run: |
+          rustup target add ${{ env.TARGET }}
 
       - name: Prebuild
         run: pnpm run prebuild ${{ env.TARGET }}
