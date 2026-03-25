@@ -81,7 +81,7 @@ jobs:
 
       - name: Build (NSIS, no updater json)
         shell: pwsh
-        run: pnpm tauri build --target ${{ env.TARGET }}
+        run: pnpm tauri build --target ${{ env.TARGET }} --config src-tauri/tauri.win7.conf.json
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
 
