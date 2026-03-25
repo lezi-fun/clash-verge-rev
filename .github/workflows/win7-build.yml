@@ -63,22 +63,15 @@ jobs:
           $arch = "${{ github.event.inputs.arch }}"
           powershell -ExecutionPolicy Bypass -File .\scripts\windows\prepare-fixed-webview2.ps1 -Arch $arch -Version "${{ github.event.inputs.webview2_version }}"
 
-      - name: Build (NSIS)
-        uses: tauri-apps/tauri-action@v0
+      - name: Build (NSIS, no updater json)
+        shell: pwsh
+        run: pnpm tauri build --target ${{ env.TARGET }}
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tauriScript: pnpm
-          args: --target ${{ env.TARGET }}
-
-
 
       - name: Portable Bundle (Fixed WebView2)
         shell: pwsh
-        run: pnpm portable-fixed-webview2 ${{ env.TARGET }} --${{ env.TAG_NAME }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm portable-fixed-webview2 ${{ env.TARGET }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
@@ -87,3 +80,4 @@ jobs:
           archive: false
           path: |
             target/${{ env.TARGET }}/release/bundle/nsis/*setup*
+            Clash.Verge_*_fixed_webview2_portable.zip
