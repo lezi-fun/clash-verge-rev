@@ -20,13 +20,11 @@ function Use-FixedConfig {
   if (Test-Path $targetConf) { Remove-Item $targetConf -Force }
   Copy-Item (Join-Path $srcTauri "webview2.$arch.json") $targetConf -Force
 
-  # Patch fixed runtime path to match selected version/arch
-  $raw = Get-Content $targetConf -Raw
-  $patched = $raw -replace 'Microsoft\.WebView2\.FixedVersionRuntime\.[^"/]+\.' + $arch, "Microsoft.WebView2.FixedVersionRuntime.$version.$arch"
-  if ($patched -ne $raw) {
-    Set-Content -Path $targetConf -Value $patched -Encoding UTF8
-    Write-Host "[win7-support] Patched fixed runtime path => Microsoft.WebView2.FixedVersionRuntime.$version.$arch"
-  }
+  # Force fixed runtime path to selected version/arch
+  $cfg = Get-Content $targetConf -Raw | ConvertFrom-Json
+  $cfg.bundle.windows.webviewInstallMode.path = "./Microsoft.WebView2.FixedVersionRuntime.$version.$arch/"
+  ($cfg | ConvertTo-Json -Depth 50) | Set-Content -Path $targetConf -Encoding UTF8
+  Write-Host "[win7-support] Set fixed runtime path => Microsoft.WebView2.FixedVersionRuntime.$version.$arch"
 }
 
 function Use-BootstrapperConfig {
