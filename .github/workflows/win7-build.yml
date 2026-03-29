@@ -80,11 +80,24 @@ jobs:
       - name: Prebuild
         run: pnpm run prebuild ${{ env.TARGET }}
 
+      - name: Cache WebView2 Fixed Runtime CAB
+        id: webview2-cache
+        uses: actions/cache@v5
+        with:
+          path: Microsoft.WebView2.FixedVersionRuntime.${{ github.event.inputs.webview2_version }}.${{ github.event.inputs.arch }}.cab
+          key: webview2-${{ runner.os }}-${{ github.event.inputs.arch }}-${{ github.event.inputs.webview2_version }}
+
       - name: Prepare Fixed WebView2 Runtime
         shell: pwsh
         run: |
           $arch = "${{ github.event.inputs.arch }}"
-          powershell -ExecutionPolicy Bypass -File .\scripts\windows\prepare-fixed-webview2.ps1 -Arch $arch -Version "${{ github.event.inputs.webview2_version }}"
+          $ver = "${{ github.event.inputs.webview2_version }}"
+          $hit = "${{ steps.webview2-cache.outputs.cache-hit }}"
+          if ($hit -eq 'true') {
+            powershell -ExecutionPolicy Bypass -File .\scripts\windows\prepare-fixed-webview2.ps1 -Arch $arch -Version $ver -SkipDownload
+          } else {
+            powershell -ExecutionPolicy Bypass -File .\scripts\windows\prepare-fixed-webview2.ps1 -Arch $arch -Version $ver
+          }
 
       - name: Build (NSIS, no updater json)
         shell: pwsh
