@@ -21,9 +21,11 @@ function Use-FixedConfig {
   Copy-Item (Join-Path $srcTauri "webview2.$arch.json") $targetConf -Force
 
   # Force fixed runtime path to selected version/arch
-  $cfg = Get-Content $targetConf -Raw | ConvertFrom-Json
+  $cfg = Get-Content $targetConf -Raw | ConvertFrom-Json -Depth 50
   $cfg.bundle.windows.webviewInstallMode.path = "./Microsoft.WebView2.FixedVersionRuntime.$version.$arch/"
-  ($cfg | ConvertTo-Json -Depth 50) | Set-Content -Path $targetConf -Encoding UTF8
+  $json = $cfg | ConvertTo-Json -Depth 50
+  $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+  [System.IO.File]::WriteAllText($targetConf, $json, $utf8NoBom)
   Write-Host "[win7-support] Set fixed runtime path => Microsoft.WebView2.FixedVersionRuntime.$version.$arch"
 }
 
