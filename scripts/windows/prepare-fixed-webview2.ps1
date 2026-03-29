@@ -48,7 +48,7 @@ if ($ConfigMode -eq 'fixed') {
   Write-Host "[win7-support] Expanding CAB into src-tauri/..."
   Expand .\$cabName -F:* $srcTauri
 
-  Use-FixedConfig -arch $Arch
+  Use-FixedConfig -arch $Arch -version $Version
 
   Write-Host "[win7-support] Done. Next: pnpm tauri build --target <target>"
   Write-Host "[win7-support] Tip: you can try older WebView2 versions via -Version <ver> if Win7 fails."
