@@ -14,11 +14,19 @@ $srcTauri = Join-Path $repoRoot 'src-tauri'
 if (!(Test-Path $srcTauri)) { throw "src-tauri not found: $srcTauri" }
 
 function Use-FixedConfig {
-  param([string]$arch)
+  param([string]$arch, [string]$version)
   Write-Host "[win7-support] Switching tauri.windows.conf.json => webview2.$arch.json"
   $targetConf = Join-Path $srcTauri 'tauri.windows.conf.json'
   if (Test-Path $targetConf) { Remove-Item $targetConf -Force }
   Copy-Item (Join-Path $srcTauri "webview2.$arch.json") $targetConf -Force
+
+  # Patch fixed runtime path to match selected version/arch
+  $raw = Get-Content $targetConf -Raw
+  $patched = $raw -replace 'Microsoft\.WebView2\.FixedVersionRuntime\.[^"/]+\.' + $arch, "Microsoft.WebView2.FixedVersionRuntime.$version.$arch"
+  if ($patched -ne $raw) {
+    Set-Content -Path $targetConf -Value $patched -Encoding UTF8
+    Write-Host "[win7-support] Patched fixed runtime path => Microsoft.WebView2.FixedVersionRuntime.$version.$arch"
+  }
 }
 
 function Use-BootstrapperConfig {
